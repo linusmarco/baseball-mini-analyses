@@ -7,20 +7,21 @@ EVENT_DATA = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet/2016.CSV"
 
 
 def make_dummy(df, col):
-    df.loc[df[col] == 'T', col] = True
-    df.loc[df[col] == 'F', col] = False
-    assert df[col].isin([True, False]).all()
+    df.loc[df[col] == 'T', col] = 1
+    df.loc[df[col] == 'F', col] = 0
+    assert df[col].isin([1, 0]).all()
     df[col] = pd.to_numeric(df[col])
 
 
 def make_outcome_flags(df):
-    df['1B'] = df['EVENT_CD'] == 20
-    df['2B'] = df['EVENT_CD'] == 21
-    df['3B'] = df['EVENT_CD'] == 22
-    df['HR'] = df['EVENT_CD'] == 23
-    df['BB'] = df['EVENT_CD'] == 14
-    df['IBB'] = df['EVENT_CD'] == 15
-    df['HBP'] = df['EVENT_CD'] == 16
+    df['1B'] = (df['EVENT_CD'] == 20).astype(int)
+    df['2B'] = (df['EVENT_CD'] == 21).astype(int)
+    df['3B'] = (df['EVENT_CD'] == 22).astype(int)
+    df['HR'] = (df['EVENT_CD'] == 23).astype(int)
+    df['H'] = (df['1B'] + df['2B'] + df['3B'] + df['HR']).astype(int)
+    df['BB'] = (df['EVENT_CD'] == 14).astype(int)
+    df['IBB'] = (df['EVENT_CD'] == 15).astype(int)
+    df['HBP'] = (df['EVENT_CD'] == 16).astype(int)
 
 
 def collapse_matchups(df, ids, vals):
@@ -34,6 +35,13 @@ def filter_mins(df, idvar, rank):
     top = df.groupby(idvar).size().nlargest(rank).reset_index()[idvar]
     df = df[df[idvar].isin(top)]
     return df
+
+
+def calc_outcomes(df):
+    df['AVG'] = df['H'] / df['AB']
+    df['OBP'] = (df['H'] + df['BB'] + df['IBB'] + df['HBP']) / (df['AB'] + df['BB'] + df['IBB'] + df['HBP'] + df['SF'])
+    df['SLG'] = (df['1B'] + 2*df['2B'] + 3*df['3B'] + 4*df['HR']) / df['AB']
+    df['OPS'] = df['OBP'] + df['SLG']
 
 
 def main():
@@ -55,7 +63,7 @@ def main():
     }, inplace=True)
 
     # filter to batting events (i.e no pickoffs, steals, etc.)
-    df = df[df['BAT_EVENT_FL']]
+    df = df[df['BAT_EVENT_FL'] == 1]
     df.drop('BAT_EVENT_FL', axis=1, inplace=True)
 
     # var creation
@@ -63,13 +71,16 @@ def main():
 
     # collapse
     ids = ['BAT_ID', 'PIT_ID']
-    vals = ['AB', '1B', '2B', '3B', 'HR', 'BB', 'IBB', 'HBP', 'SF']
+    vals = ['AB', '1B', '2B', '3B', 'HR', 'H', 'BB', 'IBB', 'HBP', 'SF']
     df = df[df[vals].sum(axis=1) > 0]
     matchups = collapse_matchups(df, ids, vals)    
 
     # filter on minimums
     matchups = filter_mins(matchups, 'BAT_ID', 200)
     matchups = filter_mins(matchups, 'PIT_ID', 200)
+
+    # calculate outcomes
+    calc_outcomes(matchups)
 
     print(matchups.info())
     print(matchups.head())
