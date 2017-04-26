@@ -66,9 +66,16 @@ def collapse_matchups(df, ids, vals):
     return grouped
 
 
-def filter_mins(df, idvar, rank):
-    top = df.groupby(idvar).size().nlargest(rank).reset_index()[idvar]
-    df = df[df[idvar].isin(top)]
+def filter_mins(df, idvar, vals, rank):
+    counts = df.groupby(idvar).size()
+    top = counts.nlargest(rank).reset_index()[idvar]
+    
+    other = df[~df[idvar].isin(top)].reset_index(drop=True)
+    other[idvar] = 'OTHER'
+
+    df = df[df[idvar].isin(top)].reset_index(drop=True)
+    df = df.append(other)
+
     return df
 
 
@@ -104,15 +111,17 @@ def main():
     # var creation
     make_outcome_flags(df)
 
-    # collapse
+    # filter out non-OBP matchups
     ids = ['BAT_ID', 'PIT_ID']
     vals = ['AB', '1B', '2B', '3B', 'HR', 'H', 'BB', 'IBB', 'HBP', 'SF']
     df = df[df[vals].sum(axis=1) > 0]
-    matchups = collapse_matchups(df, ids, vals)    
 
     # filter on minimums
-    matchups = filter_mins(matchups, 'BAT_ID', 100)
-    matchups = filter_mins(matchups, 'PIT_ID', 100)
+    df = filter_mins(df, 'BAT_ID', vals, 100)
+    df = filter_mins(df, 'PIT_ID', vals, 100)
+
+    # collapse
+    matchups = collapse_matchups(df, ids, vals)  
 
     # calculate outcomes
     calc_outcomes(matchups)
@@ -120,9 +129,13 @@ def main():
     # add names from rosters
     players = get_rosters(ROSTERS)
     matchups = merge_names(matchups, players)
+    matchups.loc[matchups['BAT_ID'] == "OTHER", ['BAT_LAST', 'BAT_FIRST']] = "OTHER"
+    matchups.loc[matchups['PIT_ID'] == "OTHER", ['PIT_LAST', 'PIT_FIRST']] = "OTHER"
 
     print(matchups.info())
     print(matchups.head())
+
+    matchups.to_csv("matchups.csv", index=False)
     
 
 if (__name__ == "__main__"):
