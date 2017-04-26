@@ -1,9 +1,44 @@
 import os
+import sys
 import numpy as np
 import pandas as pd
 
 
 EVENT_DATA = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet/2016.CSV"
+ROSTERS = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet"
+
+
+def get_rosters(folder):
+    files = os.listdir(folder)
+    rosters = [r for r in files if r.upper().endswith(".ROS")]
+    players = pd.DataFrame()
+    for r in rosters:
+        tm = pd.read_csv(os.path.join(folder, r), header=None)
+        players = players.append(tm)
+    
+    players.rename(columns={
+        0: 'ID',
+        1: 'LAST',
+        2: 'FIRST'
+    }, inplace=True)
+    players = players.drop_duplicates(subset='ID')[['ID', 'FIRST', 'LAST']]
+
+    return players
+
+
+def merge_names(matchups, players):
+    for p in ['BAT', 'PIT']:
+        matchups = matchups.merge(players,  
+                                  left_on='{}_ID'.format(p), 
+                                  right_on='ID', 
+                                  how='left')
+        matchups.drop('ID', axis=1, inplace=True)
+        matchups.rename(columns={
+            'LAST': '{}_LAST'.format(p),
+            'FIRST': '{}_FIRST'.format(p)
+        }, inplace=True)
+
+    return matchups
 
 
 def make_dummy(df, col):
@@ -45,7 +80,7 @@ def calc_outcomes(df):
 
 
 def main():
-    
+
     # read event data
     df = pd.read_csv(EVENT_DATA)
 
@@ -76,11 +111,15 @@ def main():
     matchups = collapse_matchups(df, ids, vals)    
 
     # filter on minimums
-    matchups = filter_mins(matchups, 'BAT_ID', 200)
-    matchups = filter_mins(matchups, 'PIT_ID', 200)
+    matchups = filter_mins(matchups, 'BAT_ID', 100)
+    matchups = filter_mins(matchups, 'PIT_ID', 100)
 
     # calculate outcomes
     calc_outcomes(matchups)
+
+    # add names from rosters
+    players = get_rosters(ROSTERS)
+    matchups = merge_names(matchups, players)
 
     print(matchups.info())
     print(matchups.head())
