@@ -19,9 +19,13 @@ def get_rosters(folder):
     players.rename(columns={
         0: 'ID',
         1: 'LAST',
-        2: 'FIRST'
+        2: 'FIRST',
+        5: 'TEAM'
     }, inplace=True)
-    players = players.drop_duplicates(subset='ID')[['ID', 'FIRST', 'LAST']]
+
+    players = players.drop_duplicates(subset='ID')[['ID', 'FIRST', 'LAST', 'TEAM']]
+
+    players.to_csv("players.csv", index=False)
 
     return players
 
@@ -35,7 +39,8 @@ def merge_names(matchups, players):
         matchups.drop('ID', axis=1, inplace=True)
         matchups.rename(columns={
             'LAST': '{}_LAST'.format(p),
-            'FIRST': '{}_FIRST'.format(p)
+            'FIRST': '{}_FIRST'.format(p),
+            'TEAM': '{}_TEAM'.format(p)
         }, inplace=True)
 
     return matchups
@@ -129,8 +134,8 @@ def main():
     # add names from rosters
     players = get_rosters(ROSTERS)
     matchups = merge_names(matchups, players)
-    matchups.loc[matchups['BAT_ID'] == "OTHER", ['BAT_LAST', 'BAT_FIRST']] = "OTHER"
-    matchups.loc[matchups['PIT_ID'] == "OTHER", ['PIT_LAST', 'PIT_FIRST']] = "OTHER"
+    matchups.loc[matchups['BAT_ID'] == "OTHER", ['BAT_LAST', 'BAT_FIRST', 'BAT_TEAM']] = "OTHER"
+    matchups.loc[matchups['PIT_ID'] == "OTHER", ['PIT_LAST', 'PIT_FIRST', 'PIT_TEAM']] = "OTHER"
 
     print(matchups.info())
     print(matchups.head())
