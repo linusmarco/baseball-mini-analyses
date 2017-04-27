@@ -7,6 +7,39 @@ import pandas as pd
 EVENT_DATA = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet/2016.CSV"
 ROSTERS = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet"
 
+DIVISIONS = {
+    "TBA": "AL East",
+    "NYA": "AL East",
+    "TOR": "AL East",
+    "BAL": "AL East",
+    "BOS": "AL East",
+    "CHA": "AL Central",
+    "CLE": "AL Central",
+    "DET": "AL Central",
+    "KCA": "AL Central",
+    "MIN": "AL Central",
+    "HOU": "AL West",
+    "OAK": "AL West",
+    "SEA": "AL West",
+    "ANA": "AL West",
+    "TEX": "AL West",
+    "ATL": "NL East",
+    "WAS": "NL East",
+    "MIA": "NL East",
+    "NYN": "NL East",
+    "PHI": "NL East",
+    "CHN": "NL Central",
+    "CIN": "NL Central",
+    "MIL": "NL Central",
+    "SLN": "NL Central",
+    "PIT": "NL Central",
+    "COL": "NL West",    
+    "LAN": "NL West",
+    "SDN": "NL West",
+    "SFN": "NL West",
+    "ARI": "NL West"
+}
+
 
 def get_rosters(folder):
     files = os.listdir(folder)
@@ -23,6 +56,7 @@ def get_rosters(folder):
         5: 'TEAM'
     }, inplace=True)
 
+    # TODO: pick correct team for players that played at multiple
     players = players.drop_duplicates(subset='ID')[['ID', 'FIRST', 'LAST', 'TEAM']]
 
     players.to_csv("players.csv", index=False)
@@ -136,6 +170,8 @@ def main():
     matchups = merge_names(matchups, players)
     matchups.loc[matchups['BAT_ID'] == "OTHER", ['BAT_LAST', 'BAT_FIRST', 'BAT_TEAM']] = "OTHER"
     matchups.loc[matchups['PIT_ID'] == "OTHER", ['PIT_LAST', 'PIT_FIRST', 'PIT_TEAM']] = "OTHER"
+    matchups['BAT_DIV'] = matchups['BAT_TEAM'].replace(DIVISIONS)
+    matchups['PIT_DIV'] = matchups['PIT_TEAM'].replace(DIVISIONS)
 
     print(matchups.info())
     print(matchups.head())
