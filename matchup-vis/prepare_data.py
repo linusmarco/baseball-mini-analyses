@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import numpy as np
 import pandas as pd
 
@@ -59,7 +60,7 @@ def get_rosters(folder):
     # TODO: pick correct team for players that played at multiple
     players = players.drop_duplicates(subset='ID')[['ID', 'FIRST', 'LAST', 'TEAM']]
 
-    players.to_csv("players.csv", index=False)
+    # players.to_csv("players.csv", index=False)
 
     return players
 
@@ -96,6 +97,8 @@ def make_outcome_flags(df):
     df['BB'] = (df['EVENT_CD'] == 14).astype(int)
     df['IBB'] = (df['EVENT_CD'] == 15).astype(int)
     df['HBP'] = (df['EVENT_CD'] == 16).astype(int)
+    df['PA'] = df[['AB', 'BB', 'IBB', 'HBP', 'SF']].max(axis=1)
+    assert df['PA'].isin([0,1]).all()
 
 
 def collapse_matchups(df, ids, vals):
@@ -152,7 +155,7 @@ def main():
 
     # filter out non-OBP matchups
     ids = ['BAT_ID', 'PIT_ID']
-    vals = ['AB', '1B', '2B', '3B', 'HR', 'H', 'BB', 'IBB', 'HBP', 'SF']
+    vals = ['PA', 'AB', '1B', '2B', '3B', 'HR', 'H', 'BB', 'IBB', 'HBP', 'SF']
     df = df[df[vals].sum(axis=1) > 0]
 
     # filter on minimums
@@ -176,7 +179,40 @@ def main():
     print(matchups.info())
     print(matchups.head())
 
-    matchups.to_csv("matchups.csv", index=False)
+    # matchups.to_csv("matchups.csv", index=False)
+    
+    batters = matchups[['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM']].drop_duplicates(subset='BAT_ID')
+    pitchers = matchups[['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM']].drop_duplicates(subset='PIT_ID')
+
+    batters['POS'] = 'BATTER'
+    batters.rename(columns={
+        'BAT_ID': 'ID',
+        'BAT_FIRST': 'FIRST',
+        'BAT_LAST': 'LAST',
+        'BAT_TEAM': 'TEAM'
+    }, inplace=True)
+
+    pitchers['POS'] = 'PITCHER'
+    pitchers.rename(columns={
+        'PIT_ID': 'ID',
+        'PIT_FIRST': 'FIRST',
+        'PIT_LAST': 'LAST',
+        'PIT_TEAM': 'TEAM'
+    }, inplace=True)
+
+    players = batters.append(pitchers)
+
+    matchups = matchups[['BAT_ID', 'PIT_ID', 'PA', 'OPS']]
+
+    out = {
+        "nodes": players.to_dict(orient='records'),
+        "links": matchups.to_dict(orient='records')
+    }
+
+    out_json = json.dumps(out)
+
+    with open("vis/data/data.json", 'w') as f:
+        f.write(out_json)
     
 
 if (__name__ == "__main__"):
