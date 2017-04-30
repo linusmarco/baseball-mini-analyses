@@ -122,9 +122,9 @@ def filter_mins(df, idvar, vals, rank):
 
 
 def calc_outcomes(df):
-    df['AVG'] = df['H'] / df['AB']
+    df['AVG'] = (df['H'] / df['AB']).fillna(0)
     df['OBP'] = (df['H'] + df['BB'] + df['IBB'] + df['HBP']) / (df['AB'] + df['BB'] + df['IBB'] + df['HBP'] + df['SF'])
-    df['SLG'] = (df['1B'] + 2*df['2B'] + 3*df['3B'] + 4*df['HR']) / df['AB']
+    df['SLG'] = ((df['1B'] + 2*df['2B'] + 3*df['3B'] + 4*df['HR']) / df['AB']).fillna(0)
     df['OPS'] = df['OBP'] + df['SLG']
 
 
@@ -159,8 +159,8 @@ def main():
     df = df[df[vals].sum(axis=1) > 0]
 
     # filter on minimums
-    df = filter_mins(df, 'BAT_ID', vals, 100)
-    df = filter_mins(df, 'PIT_ID', vals, 100)
+    df = filter_mins(df, 'BAT_ID', vals, 20)
+    df = filter_mins(df, 'PIT_ID', vals, 20)
 
     # collapse
     matchups = collapse_matchups(df, ids, vals)  
@@ -203,6 +203,10 @@ def main():
     players = batters.append(pitchers)
 
     matchups = matchups[['BAT_ID', 'PIT_ID', 'PA', 'OPS']]
+    matchups.rename(columns={
+        'BAT_ID': 'source',
+        'PIT_ID': 'target'
+    }, inplace=True)
 
     out = {
         "nodes": players.to_dict(orient='records'),
