@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import math
 import numpy as np
 import pandas as pd
 
@@ -180,9 +181,9 @@ def main():
     print(matchups.head())
 
     batters = matchups.groupby(['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM']).sum().reset_index()
-    batters = batters[['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM', 'PA']]
+    batters = batters[['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM', 'PA', 'AB']]
     pitchers = matchups.groupby(['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM']).sum().reset_index()
-    pitchers = pitchers[['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM', 'PA']]
+    pitchers = pitchers[['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM', 'PA', 'AB']]
 
     batters['POS'] = 'BATTER'
     batters.rename(columns={
@@ -202,7 +203,7 @@ def main():
 
     players = batters.append(pitchers)
 
-    matchups = matchups[['BAT_ID', 'PIT_ID', 'PA', 'OPS']]
+    matchups = matchups[['BAT_ID', 'PIT_ID', 'PA', 'AB', 'AVG', 'OBP', 'SLG', 'OPS']]
     matchups.rename(columns={
         'BAT_ID': 'source',
         'PIT_ID': 'target'
@@ -210,8 +211,24 @@ def main():
 
     out = {
         "nodes": players.to_dict(orient='records'),
-        "links": matchups.to_dict(orient='records')
+        "links": matchups.to_dict(orient='records'),
+        "summary": {}
     }
+
+    for v in ['AVG', 'OBP', 'SLG', 'OPS']:
+        if v in ['AVG', 'SLG']:
+            weights = matchups['AB']
+        else:
+            weights = matchups['PA']
+        
+        average = np.average(matchups[v], weights=weights)
+        variance = np.average((matchups[v] - average)**2, weights=weights)
+        stddev = math.sqrt(variance)
+
+        out['summary'][v] = {
+            "mean": average,
+            "std": stddev
+        }
 
     out_json = json.dumps(out)
 
