@@ -6,7 +6,9 @@ var loadVis = function() {
         width = +svg.attr("width"),
         height = +svg.attr("height");
 
-    var color = d3.scaleOrdinal(d3.schemeCategory20);
+    var color = d3.scaleOrdinal()
+        .domain([1,2])
+        .range(["red", "blue"]);
 
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(function(d) { return d.ID; }))
@@ -26,22 +28,21 @@ var loadVis = function() {
             return node;
         });
 
-        console.log(graph);
-
         var link = svg.append("g")
             .attr("class", "links")
             .selectAll("line")
             .data(graph.links)
             .enter().append("line")
-                // .attr("stroke-width", function(d) { return Math.sqrt(d.OPS); });
-                .attr("stroke-width", function(d) { return 3 });
+                .attr("stroke-width", function(d) { return d.PA; });
 
         var node = svg.append("g")
             .attr("class", "nodes")
             .selectAll("circle")
             .data(graph.nodes).enter()
             .append("circle")
-                .attr("r", 5)
+                .attr("r", function(d) {
+                    return d.PA / 50;
+                })
                 .attr("fill", function(d) { return color(d.group); })
                 .call(d3.drag()
                     .on("start", dragstarted)

@@ -179,10 +179,10 @@ def main():
     print(matchups.info())
     print(matchups.head())
 
-    # matchups.to_csv("matchups.csv", index=False)
-    
-    batters = matchups[['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM']].drop_duplicates(subset='BAT_ID')
-    pitchers = matchups[['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM']].drop_duplicates(subset='PIT_ID')
+    batters = matchups.groupby(['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM']).sum().reset_index()
+    batters = batters[['BAT_ID', 'BAT_FIRST', 'BAT_LAST', 'BAT_TEAM', 'PA']]
+    pitchers = matchups.groupby(['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM']).sum().reset_index()
+    pitchers = pitchers[['PIT_ID', 'PIT_FIRST', 'PIT_LAST', 'PIT_TEAM', 'PA']]
 
     batters['POS'] = 'BATTER'
     batters.rename(columns={
