@@ -16,12 +16,18 @@ def download(url, file):
     f = rq.urlretrieve(url, file)
 
 
+def unzip(path):
+    with zf.ZipFile(path, 'r') as z:
+        z.extractall(os.path.split(path)[0])
+
+
 def main():
     mkdir(DATA_DIR)
 
     url = RETROSHEET_EVENTS.format(2016)
     file = os.path.join(DATA_DIR, os.path.basename(url))
     download(url, file)
+    unzip(file)
 
 
 if (__name__ == "__main__"):
