@@ -5,9 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 
-
-EVENT_DATA = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet/2016.CSV"
-ROSTERS = "C:/Users/LMarco/Documents/02_Linus's Projects/RetroSheet"
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+EVENT_DATA = os.path.join(DATA_DIR, "2016.CSV")
 
 DIVISIONS = {
     "TBA": "AL East",
@@ -170,7 +169,7 @@ def main():
     calc_outcomes(matchups)
 
     # add names from rosters
-    players = get_rosters(ROSTERS)
+    players = get_rosters(DATA_DIR)
     matchups = merge_names(matchups, players)
     matchups.loc[matchups['BAT_ID'] == "OTHER", ['BAT_LAST', 'BAT_FIRST', 'BAT_TEAM']] = "OTHER"
     matchups.loc[matchups['PIT_ID'] == "OTHER", ['PIT_LAST', 'PIT_FIRST', 'PIT_TEAM']] = "OTHER"
