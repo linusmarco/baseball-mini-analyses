@@ -13,7 +13,7 @@ def mkdir(path):
 
 
 def download(url, file):
-    f = rq.urlretrieve(url, file)
+    rq.urlretrieve(url, file)
 
 
 def unzip(path):
